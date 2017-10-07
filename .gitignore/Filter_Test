@@ -1,0 +1,131 @@
+版本(1)
+GET /logstash-*/_search     //指定某段時間內有msg欄位且內容符合"anomaly: udp_src_session,......"的log並回傳其"srcip","msg","time"資訊
+{ 
+  "_source": {
+        "includes": [ "srcip", "msg","time"]
+    },
+  "query":{
+     "bool": {
+        "must":[
+         {
+         "range":{
+         "@timestamp":{
+            "gte":"2017-08-01T11:00:00",
+            "lt":"2017-09-01T12:00:00"
+            }
+          }
+        },
+        {
+            "exists" : { "field" : "msg" }
+        }
+        ],
+        "filter":[
+          {"match" : {
+            "msg" : "anomaly: udp_src_session,"}},
+          {"match" : { 
+            "msg" : "anomaly: tcp_src_session,"}}
+          ]
+     }   
+  }
+}
+版本(2)                 
+GET /logstash-*/_search     //與上述類似，差別是取的時間是現在時間往前推一個時段 ex:1小時
+{ 
+  "_source": {
+        "includes": [ "srcip", "msg","time"]
+    },
+  "query":{
+     "bool": {
+        "must":[
+         {
+         "range" : {
+         "@timestamp" : {
+         "gt" : "now-1h"
+            }
+          }
+        },
+        {
+            "exists" : { "field" : "msg" }
+        }
+        ],
+        "filter":[
+          {"match" : {
+            "msg" : "anomaly: udp_src_session,"}},
+          {"match" : { 
+            "msg" : "anomaly: tcp_src_session,"}}
+          ]
+      }
+      
+  }
+}
+實際測試:              //先把永為學長給的anomaly log丟進去然後query
+{
+  "took": 30,
+  "timed_out": false,
+  "_shards": {
+    "total": 30,
+    "successful": 30,
+    "failed": 0
+  },
+  "hits": {
+    "total": 5,       //抓到5筆log
+    "max_score": 2,
+    "hits": [
+      {
+        "_index": "logstash-2017.09.18",
+        "_type": "anomaly",
+        "_id": "AV6UFzsLUJqRkTlxbi3d",
+        "_score": 2,
+        "_source": {
+          "msg": "anomaly: udp_src_session, 4 > threshold 3",
+          "srcip": "192.168.100.100",
+          "time": "00:34:47"
+        }
+      },
+      {
+        "_index": "logstash-2017-08-09",
+        "_type": "anomaly",
+        "_id": "AV44AeeSUJqRkTlxaaQr",
+        "_score": 2,
+        "_source": {
+          "msg": "anomaly: udp_src_session, 4 > threshold 3",
+          "srcip": "192.168.100.100",
+          "time": "00:34:47"
+        }
+      },
+      {
+        "_index": "logstash-2017.09.18",
+        "_type": "anomaly",
+        "_id": "AV6UFdiKUJqRkTlxbi3c",
+        "_score": 2,
+        "_source": {
+          "msg": "anomaly: udp_src_session, 4 > threshold 3",
+          "srcip": "192.168.100.100",
+          "time": "00:34:47"
+        }
+      },
+      {
+        "_index": "logstash-2017-08-09",
+        "_type": "anomaly",
+        "_id": "AV44AeiEUJqRkTlxaaQs",
+        "_score": 2,
+        "_source": {
+          "msg": "anomaly: udp_src_session, 4 > threshold 3",
+          "srcip": "192.168.100.100",
+          "time": "00:34:47"
+        }
+      },
+      {
+        "_index": "logstash-2017-08-09",
+        "_type": "anomaly",
+        "_id": "AV43_9qPUJqRkTlxaaQq",
+        "_score": 2,
+        "_source": {
+          "msg": "anomaly: udp_src_session, 4 > threshold 3",
+          "srcip": "192.168.100.55",
+          "time": "00:34:47"
+        }
+      }
+    ]
+  }
+}
